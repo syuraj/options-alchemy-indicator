@@ -3,14 +3,14 @@ indicator(title='Options Alchemy Algo', overlay=true, shorttitle='OA', max_bars_
 
 src             = input.source(title = "Source", defval = close)
 ema1            = input.int(title = "EMA 1", inline = 'ema1', defval = 9)
-ema1_color      = input.color(title='', inline = 'ema1', defval = color.rgb(78, 194, 138))
+ema1_color      = input.color(title='', inline = 'ema1', defval = color.rgb(33, 25, 57))
 ema2            = input.int(title = "EMA 2", inline = 'ema2', defval = 21)
 ema2_color      = input.color(title='', inline = 'ema2', defval = color.rgb(22, 65, 100))
 ema3            = input.int(title = "EMA 3", inline = 'ema3', defval = 50)
-ema3_color      = input.color(title='', inline = 'ema3', defval = color.rgb(53, 59, 173))
+ema3_color      = input.color(title='', inline = 'ema3', defval = color.rgb(91, 97, 203))
 
 plot_vwap 	    = input.bool(title = "VWAP", inline = 'vwap', defval = true)
-vwap_color      = input.color(title='', inline = 'vwap', defval = color.rgb(189, 16, 16))
+vwap_color      = input.color(title='', inline = 'vwap', defval = color.rgb(78, 194, 138))
 
 plot_4_day_key_levels = input.bool(title = "4 day key levels", inline = 'key_level_color', defval = true)
 key_level_color      = input.color(title='', inline = 'key_level_color', defval = color.new(color.yellow,60))
@@ -24,8 +24,6 @@ fvg_tf = input.timeframe(title = "", inline = 'fvg', defval = '60')
 
 // show_gaps = input.bool(title = "Gaps, Timeframe", inline = 'gaps', defval = true)
 // gaps_tf = input.timeframe(title = "", inline = 'gaps', defval = '60')
-
-plot_adx_strength = input.bool(title = "ADX Trend Strength", defval = false)
 
 plot_vol_profile = input.bool(title = "Volume Profile", defval = true)
 
@@ -71,7 +69,7 @@ f_moveLine(_line, _x, _y) =>
 
 [do0,dh0,dl0,dc0,pdo1,pdh1,pdl1,pdc1,pdo2,pdh2,pdl2,pdc2,pdo3,pdh3,pdl3,pdc3,pdo4,pdh4,pdl4,pdc4] = request.security(syminfo.tickerid,"D", [open,high,low,close, open[1],high[1],low[1],close[1],open[2],high[2],low[2],close[2],open[3],high[3],low[3],close[3],open[4],high[4],low[4],close[4]])
 
-if barstate.islast and plot_4_day_key_levels
+if barstate.islast and plot_4_day_key_levels and timeframe.isintraday
     f_moveLine(f_newLine(key_level_color), time, do0)
     f_moveLine(f_newLine(key_level_color), time, pdo1)
     f_moveLine(f_newLine(key_level_color), time, pdl1)
@@ -817,37 +815,6 @@ if plot_trendlines
 
 
 
-/// ADX Trend indicator
-// This is a different way of plotting ADX used by Leaf_West at http://tradingwithleafwest.net/.  
-
-LWadxlength = 8 // ADX period
-LWdilength = 9 // DMI Length
-
-dirmov(len) =>
-	up = ta.change(high)
-	down = -ta.change(low)
-	truerange = ta.rma(ta.tr, len)
-	plus = fixnan(100 * ta.rma(up > down and up > 0 ? up : 0, len) / truerange)
-	minus = fixnan(100 * ta.rma(down > up and down > 0 ? down : 0, len) / truerange)
-	[plus, minus]
-
-adx(LWdilength, LWadxlength) => 
-	[plus, minus] = dirmov(LWdilength)
-	sum = plus + minus
-	adx = 100 * ta.rma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), LWadxlength)
-	[adx, plus, minus]
-
-var LWADX = close
-var adxcolor = color.green
-if plot_adx_strength
-    [ADX, up, down] = adx(LWdilength, LWadxlength)
-    LWADX := (ADX-15)*2.5
-    adxcolor := up>down? color.green: color.red
-
-bgcolor(color= plot_adx_strength and time("", "0930-1600") ? color.new(adxcolor, transp = 100 - LWADX/5) : na)
-
-
-
 /// Bull and Bear hours
 
 
@@ -1092,7 +1059,7 @@ drawNewZone(update) =>
 
         poc = pocLevel()
         // [val, vah] = valueLevels(poc)        
-        if showPoc
+        if showPoc and timeframe.isintraday
             line.new(int(leftMax), poc, bar_index-1, poc, extend = extend.right, color=pocCol, width=pocWid)
 
 
@@ -1219,7 +1186,7 @@ zoneEnd = switch sessionType
     => newDaily
 
 
-if plot_vol_profile
+if plot_vol_profile and timeframe.isintraday
     //Re calculating and drawing zones
     calcSession(barstate.islast and showCur)
     // drawNewZone(zoneEnd)
